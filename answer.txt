@@ -1,0 +1,36 @@
+Q1. 
+
+When running with 1 CPU, the total execution time is 67.6 s; when running with 2 CPUs, the time is  35.8 s; when running with 4 CPUs, the time is 33.5 s. As we can see from the result, there is no linear relationship between the number of CPUs and the total execution time. Because given the number of processes is a fixed number here, when we have more CPUs, actually there are more chances CPUs are in idle state and not doing the job; thus having more CPUs doesn't save the total execution time to form a linear relationship.
+
+Q2. 
+
+The statistics with respect to time slice is below:
+	
+800ms
+
+# of Context Switches: 136
+Total execution time: 67.6 s
+Total time spent in READY state: 325.4 s		
+
+600ms		 
+
+# of Context Switches: 160
+Total execution time: 67.6 s
+Total time spent in READY state: 314.3 s
+	
+400ms		 
+
+# of Context Switches: 203
+Total execution time: 67.6 s
+Total time spent in READY state: 298.8 s
+
+200ms		
+
+# of Context Switches: 362
+Total execution time: 67.5 s
+Total time spent in READY state: 285.2 s
+
+As we can see from the result, the waiting time decreases as time slice goes down. But in real OS, choosing the smallest time slice may not result in minimum waiting time, because as the quantum goes down, there will be more context switches happening, which create lots of overhead and thus may even increase waiting time.
+
+Q3. 
+
