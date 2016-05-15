@@ -1,6 +1,6 @@
 /*
  * student.c
- * This file contains the CPU scheduler for the simulation.  
+ * This file contains the CPU scheduler for the simulation.
  * original base code from http://www.cc.gatech.edu/~rama/CS2200
  * Last modified 5/11/2016 by Sherri Goings
  */
@@ -14,9 +14,9 @@
 #include "os-sim.h"
 #include "student.h"
 
-// Local helper functions 
-static void addReadyProcess(pcb_t* proc); 
-static pcb_t* getReadyProcess(void); 
+// Local helper functions
+static void addReadyProcess(pcb_t* proc);
+static pcb_t* getReadyProcess(void);
 static void schedule(unsigned int cpu_id);
 static int validForPreempt(pcb_t* proc);
 static void addReadyProcessToHead(pcb_t* proc);
@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
  * idle() is called by the simulator when the idle process is scheduled.
  * It blocks until a process is added to the ready queue, and then calls
  * schedule() to select the next process to run on the CPU.
- * 
+ *
  * THIS FUNCTION IS ALREADY COMPLETED - DO NOT MODIFY
  */
 extern void idle(unsigned int cpu_id)
@@ -113,7 +113,7 @@ extern void idle(unsigned int cpu_id)
   }
   pthread_mutex_unlock(&ready_mutex);
   //printf("before schedule for idle, the pid is %d\n", current[cpu_id] == NULL);
-  printf("idle goes away and begin to schedule \n");
+  //printf("idle goes away and begin to schedule \n");
   schedule(cpu_id);
 }
 
@@ -121,12 +121,12 @@ extern void idle(unsigned int cpu_id)
  * schedule() is your CPU scheduler. It currently implements basic FIFO scheduling -
  * 1. calls getReadyProcess to select and remove a runnable process from your ready queue
  * 2. updates the current array to show this process (or NULL if there was none) as
- *    running on the given cpu 
+ *    running on the given cpu
  * 3. sets this process state to running (unless its the NULL process)
  * 4. calls context_switch to actually start the chosen process on the given cpu
  *    - note if proc==NULL the idle process will be run
  *    - note the final arg of -1 means there is no clock interrupt
- *	context_switch() is prototyped in os-sim.h. Look there for more information. 
+ *	context_switch() is prototyped in os-sim.h. Look there for more information.
  *  a basic getReadyProcess() is implemented below, look at the comments for info.
  *
  * TO-DO: handle scheduling with a time-slice when necessary
@@ -136,7 +136,7 @@ extern void idle(unsigned int cpu_id)
 static void schedule(unsigned int cpu_id) {
     //we need a new get ready process method for static priority
     pcb_t* proc = getReadyProcess();
-    printf("begin scheduling and pid is %d\n", proc->pid);
+    //printf("begin scheduling and pid is %d\n", proc->pid);
     pthread_mutex_lock(&current_mutex);
     current[cpu_id] = proc;
     pthread_mutex_unlock(&current_mutex);
@@ -144,7 +144,7 @@ static void schedule(unsigned int cpu_id) {
     if (proc!=NULL) {
         proc->state = PROCESS_RUNNING;
     }
-    context_switch(cpu_id, proc, time_slice); 
+    context_switch(cpu_id, proc, time_slice);
 }
 
 
@@ -172,12 +172,12 @@ extern void preempt(unsigned int cpu_id) {
 
 
 /*
- * yield() is called by the simulator when a process performs an I/O request 
+ * yield() is called by the simulator when a process performs an I/O request
  * note this is different than the concept of yield in user-level threads!
  * In this context, yield sets the state of the process to waiting (on I/O),
  * then calls schedule() to select a new process to run on this CPU.
  * args: int - id of CPU process wishing to yield is currently running on.
- * 
+ *
  * THIS FUNCTION IS ALREADY COMPLETED - DO NOT MODIFY
  */
 extern void yield(unsigned int cpu_id) {
@@ -208,10 +208,11 @@ extern void terminate(unsigned int cpu_id) {
 
 static int validForPreempt(pcb_t* proc){
   int lowerestPriority = INT_MAX;
-  pcb_t* lowerestPriorityProcess;
+  int cpu_id;
 
   pthread_mutex_lock(&current_mutex);
-  for (int i = 0; i < cpu_count; i++) {
+  int i;
+  for (i = 0; i < cpu_count; i++) {
     //check if anyone is running idle
     if (current[i] == NULL) {
       pthread_mutex_unlock(&current_mutex);
@@ -219,13 +220,13 @@ static int validForPreempt(pcb_t* proc){
     }
     if (current[i]->static_priority < lowerestPriority) {
       lowerestPriority = current[i]->static_priority;
-      lowerestPriorityProcess = current[i];
+      cpu_id = i;
     }
   }
   pthread_mutex_unlock(&current_mutex);
 
   if (lowerestPriority < proc->static_priority) {
-    return lowerestPriorityProcess->pid;
+    return cpu_id;
   }
   return -1;
 }
@@ -242,32 +243,32 @@ static int validForPreempt(pcb_t* proc){
  * execute the process which just woke up.  However, if any CPU is
  * currently running idle, or all of the CPUs are running processes
  * with a higher priority than the one which just woke up, wake_up()
- * should not preempt any CPUs. To preempt a process, use force_preempt(). 
+ * should not preempt any CPUs. To preempt a process, use force_preempt().
  * Look in os-sim.h for its prototype and parameters.
  *
  * THIS FUNCTION IS PARTIALLY COMPLETED - REQUIRES MODIFICATION
  */
 extern void wake_up(pcb_t *process) {
     if (alg == StaticPriority) {
-      printf("the algo is static priority\n");
+      //printf("the algo is static priority\n");
       //check condition to see if preempt
       int returnValue = validForPreempt(process);
-      printf("the return value is %d\n", returnValue);
+      //printf("the return value is %d\n", returnValue);
       if (returnValue != -1) {
           process->state = PROCESS_READY;
           addReadyProcessToHead(process);
           preempt(returnValue);
-          printf("force_preempted\n");
+          //printf("force_preempted\n");
           return;
       }
     }
-    printf("no force_preempted, just normal wake_up\n");
+    //printf("no force_preempted, just normal wake_up\n");
     process->state = PROCESS_READY;
     addReadyProcess(process);
 }
 
 static void addReadyProcessToHead(pcb_t* proc) {
-  printf("addReadyProcessToHead\n");
+  //printf("addReadyProcessToHead\n");
   pthread_mutex_lock(&ready_mutex);
   // add this process to the head of the ready list
   if (head == NULL) {
@@ -279,22 +280,21 @@ static void addReadyProcessToHead(pcb_t* proc) {
   }
   else {
     pcb_t* temp = head;
-    head = proc;
-    head->next = temp;
     proc->next = temp;
+    head = proc;
   }
   pthread_mutex_unlock(&ready_mutex);
 }
 
 /* The following 2 functions implement a FIFO ready queue of processes */
 
-/* 
+/*
  * addReadyProcess adds a process to the end of a pseudo linked list (each process
  * struct contains a pointer next that you can use to chain them together)
  * it takes a pointer to a process as an argument and has no return
  */
 static void addReadyProcess(pcb_t* proc) {
-  printf("addReadyProcess\n");
+  //printf("addReadyProcess\n");
   // ensure no other process can access ready list while we update it
   pthread_mutex_lock(&ready_mutex);
 
@@ -303,7 +303,7 @@ static void addReadyProcess(pcb_t* proc) {
     head = proc;
     tail = proc;
     // if list was empty may need to wake up idle process
-    printf("signal that ready is not empty\n");
+    //printf("signal that ready is not empty\n");
     pthread_cond_signal(&ready_empty);
   }
   else {
@@ -318,13 +318,13 @@ static void addReadyProcess(pcb_t* proc) {
 }
 
 
-/* 
+/*
  * getReadyProcess removes a process from the front of a pseudo linked list (each process
  * struct contains a pointer next that you can use to chain them together)
- * it takes no arguments and returns the first process in the ready queue, or NULL 
+ * it takes no arguments and returns the first process in the ready queue, or NULL
  * if the ready queue is empty
  *
- * TO-DO: handle priority scheduling 
+ * TO-DO: handle priority scheduling
  *
  * THIS FUNCTION IS PARTIALLY COMPLETED - REQUIRES MODIFICATION
  */
@@ -349,4 +349,3 @@ static pcb_t* getReadyProcess(void) {
   pthread_mutex_unlock(&ready_mutex);
   return first;
 }
-
