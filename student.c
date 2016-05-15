@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <limits.h>
 #include "os-sim.h"
 #include "student.h"
 
@@ -18,6 +18,8 @@
 static void addReadyProcess(pcb_t* proc); 
 static pcb_t* getReadyProcess(void); 
 static void schedule(unsigned int cpu_id);
+static int validForPreempt(pcb_t* proc);
+static void addReadyProcessToHead(pcb_t* proc);
 
 /*
  * enum is useful C language construct to associate desriptive words with integer values
@@ -110,6 +112,8 @@ extern void idle(unsigned int cpu_id)
     pthread_cond_wait(&ready_empty, &ready_mutex);
   }
   pthread_mutex_unlock(&ready_mutex);
+  //printf("before schedule for idle, the pid is %d\n", current[cpu_id] == NULL);
+  printf("idle goes away and begin to schedule \n");
   schedule(cpu_id);
 }
 
@@ -132,7 +136,7 @@ extern void idle(unsigned int cpu_id)
 static void schedule(unsigned int cpu_id) {
     //we need a new get ready process method for static priority
     pcb_t* proc = getReadyProcess();
-
+    printf("begin scheduling and pid is %d\n", proc->pid);
     pthread_mutex_lock(&current_mutex);
     current[cpu_id] = proc;
     pthread_mutex_unlock(&current_mutex);
@@ -202,15 +206,29 @@ extern void terminate(unsigned int cpu_id) {
 }
 
 
-/*
- * force_preempt() preempts a running process before its timeslice expires.
- * It should be used by the Static Priority scheduler to preempt lower
- * priority processes so that higher priority processes may execute.
- */
-extern void force_preempt(unsigned int cpu_id){
+static int validForPreempt(pcb_t* proc){
+  int lowerestPriority = INT_MAX;
+  pcb_t* lowerestPriorityProcess;
 
+  pthread_mutex_lock(&current_mutex);
+  for (int i = 0; i < cpu_count; i++) {
+    //check if anyone is running idle
+    if (current[i] == NULL) {
+      pthread_mutex_unlock(&current_mutex);
+      return -1;
+    }
+    if (current[i]->static_priority < lowerestPriority) {
+      lowerestPriority = current[i]->static_priority;
+      lowerestPriorityProcess = current[i];
+    }
+  }
+  pthread_mutex_unlock(&current_mutex);
+
+  if (lowerestPriority < proc->static_priority) {
+    return lowerestPriorityProcess->pid;
+  }
+  return -1;
 }
-
 
 /*
  * wake_up() is called for a new process and when an I/O request completes.
@@ -230,8 +248,42 @@ extern void force_preempt(unsigned int cpu_id){
  * THIS FUNCTION IS PARTIALLY COMPLETED - REQUIRES MODIFICATION
  */
 extern void wake_up(pcb_t *process) {
+    if (alg == StaticPriority) {
+      printf("the algo is static priority\n");
+      //check condition to see if preempt
+      int returnValue = validForPreempt(process);
+      printf("the return value is %d\n", returnValue);
+      if (returnValue != -1) {
+          process->state = PROCESS_READY;
+          addReadyProcessToHead(process);
+          preempt(returnValue);
+          printf("force_preempted\n");
+          return;
+      }
+    }
+    printf("no force_preempted, just normal wake_up\n");
     process->state = PROCESS_READY;
     addReadyProcess(process);
+}
+
+static void addReadyProcessToHead(pcb_t* proc) {
+  printf("addReadyProcessToHead\n");
+  pthread_mutex_lock(&ready_mutex);
+  // add this process to the head of the ready list
+  if (head == NULL) {
+    head = proc;
+    tail = proc;
+    proc->next = NULL;
+    // if list was empty may need to wake up idle process
+    pthread_cond_signal(&ready_empty);
+  }
+  else {
+    pcb_t* temp = head;
+    head = proc;
+    head->next = temp;
+    proc->next = temp;
+  }
+  pthread_mutex_unlock(&ready_mutex);
 }
 
 /* The following 2 functions implement a FIFO ready queue of processes */
@@ -242,7 +294,7 @@ extern void wake_up(pcb_t *process) {
  * it takes a pointer to a process as an argument and has no return
  */
 static void addReadyProcess(pcb_t* proc) {
-
+  printf("addReadyProcess\n");
   // ensure no other process can access ready list while we update it
   pthread_mutex_lock(&ready_mutex);
 
@@ -251,6 +303,7 @@ static void addReadyProcess(pcb_t* proc) {
     head = proc;
     tail = proc;
     // if list was empty may need to wake up idle process
+    printf("signal that ready is not empty\n");
     pthread_cond_signal(&ready_empty);
   }
   else {
