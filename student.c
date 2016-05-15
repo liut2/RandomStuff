@@ -3,6 +3,7 @@
  * This file contains the CPU scheduler for the simulation.
  * original base code from http://www.cc.gatech.edu/~rama/CS2200
  * Last modified 5/11/2016 by Sherri Goings
+ * author: Tao Liu and Xi Chen
  */
 
 #include <assert.h>
@@ -112,8 +113,6 @@ extern void idle(unsigned int cpu_id)
     pthread_cond_wait(&ready_empty, &ready_mutex);
   }
   pthread_mutex_unlock(&ready_mutex);
-  //printf("before schedule for idle, the pid is %d\n", current[cpu_id] == NULL);
-  //printf("idle goes away and begin to schedule \n");
   schedule(cpu_id);
 }
 
@@ -136,7 +135,6 @@ extern void idle(unsigned int cpu_id)
 static void schedule(unsigned int cpu_id) {
     //we need a new get ready process method for static priority
     pcb_t* proc = getReadyProcess();
-    //printf("begin scheduling and pid is %d\n", proc->pid);
     pthread_mutex_lock(&current_mutex);
     current[cpu_id] = proc;
     pthread_mutex_unlock(&current_mutex);
@@ -250,10 +248,8 @@ static int validForPreempt(pcb_t* proc){
  */
 extern void wake_up(pcb_t *process) {
     if (alg == StaticPriority) {
-      //printf("the algo is static priority\n");
       //check condition to see if preempt
       int returnValue = validForPreempt(process);
-      //printf("the return value is %d\n", returnValue);
       if (returnValue != -1) {
           process->state = PROCESS_READY;
           addReadyProcessToHead(process);
@@ -262,13 +258,12 @@ extern void wake_up(pcb_t *process) {
           return;
       }
     }
-    //printf("no force_preempted, just normal wake_up\n");
+    
     process->state = PROCESS_READY;
     addReadyProcess(process);
 }
 
 static void addReadyProcessToHead(pcb_t* proc) {
-  //printf("addReadyProcessToHead\n");
   pthread_mutex_lock(&ready_mutex);
   // add this process to the head of the ready list
   if (head == NULL) {
@@ -294,7 +289,6 @@ static void addReadyProcessToHead(pcb_t* proc) {
  * it takes a pointer to a process as an argument and has no return
  */
 static void addReadyProcess(pcb_t* proc) {
-  //printf("addReadyProcess\n");
   // ensure no other process can access ready list while we update it
   pthread_mutex_lock(&ready_mutex);
 
@@ -303,7 +297,6 @@ static void addReadyProcess(pcb_t* proc) {
     head = proc;
     tail = proc;
     // if list was empty may need to wake up idle process
-    //printf("signal that ready is not empty\n");
     pthread_cond_signal(&ready_empty);
   }
   else {
@@ -329,7 +322,6 @@ static void addReadyProcess(pcb_t* proc) {
  * THIS FUNCTION IS PARTIALLY COMPLETED - REQUIRES MODIFICATION
  */
 static pcb_t* getReadyProcess(void) {
-
   // ensure no other process can access ready list while we update it
   pthread_mutex_lock(&ready_mutex);
 
