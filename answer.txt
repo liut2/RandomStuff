@@ -1,3 +1,5 @@
+author: Tao Liu and Xi Chen
+
 Q1. 
 
 When running with 1 CPU, the total execution time is 67.6 s; when running with 2 CPUs, the time is  35.8 s; when running with 4 CPUs, the time is 33.5 s. As we can see from the result, there is no linear relationship between the number of CPUs and the total execution time. Because given the number of processes is a fixed number here, when we have more CPUs, actually there are more chances CPUs are in idle state and not doing the job; thus having more CPUs doesn't save the total execution time to form a linear relationship.
@@ -32,4 +34,30 @@ Total time spent in READY state: 285.2 s
 
 As we can see from the result, the waiting time decreases as time slice goes down. But in real OS, choosing the smallest time slice may not result in minimum waiting time, because as the quantum goes down, there will be more context switches happening, which create lots of overhead and thus may even increase waiting time.
 
+<<<<<<< HEAD
 Q3.
+=======
+Q3. 
+
+The statistics for each algorithm is below:
+
+FIFO
+
+# of Context Switches: 99
+Total execution time: 67.7 s
+Total time spent in READY state: 390.8 s
+
+Round Robin
+
+# of Context Switches: 203
+Total execution time: 67.6 s
+Total time spent in READY state: 298.8 s
+
+
+Static Priority
+
+# of Context Switches: 168
+Total execution time: 68.3 s
+Total time spent in READY state: 160.4 s
+
+As we can see, Static Priority algorithm has lowest waiting time. And it also tends to match the behavior of SJF, because in SJF we "assign" a priority based on job duration. In order to make Static Priority algorithm behaves similarly to SJF, we just need to set the priority based on job duration.
